@@ -1,0 +1,12 @@
+fastapi>=0.95
+uvicorn[standard]>=0.22
+python-dotenv
+langchain
+langchain-xai
+python-multipart
+faiss-cpu
+aiohttp
+
+# Optional / development
+# - add any model-specific SDKs (openai, xai-sdk) if you use them explicitly
+# - pin versions if you need reproducible installs
