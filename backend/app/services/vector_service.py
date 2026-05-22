@@ -1,6 +1,7 @@
 import os
 
 from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores.utils import DistanceStrategy
 
 from app.services.embedding_service import (
     embedding_model
@@ -14,7 +15,9 @@ def create_vector_store(chunks):
 
     vectorstore = FAISS.from_documents(
         chunks,
-        embedding_model
+        embedding_model,
+        normalize_L2=True,
+        distance_strategy=DistanceStrategy.COSINE
     )
 
     vectorstore.save_local(
