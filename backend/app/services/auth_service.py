@@ -145,10 +145,47 @@ def create_chat_session(user_id: str, title: str | None = None) -> dict[str, Any
         "created_at": _utcnow(),
         "updated_at": _utcnow(),
         "last_message_at": None,
+        "has_documents": False,
     }
     result = sessions.insert_one(session_doc)
     session_doc["_id"] = result.inserted_id
     return serialize_session(session_doc)
+
+
+def delete_empty_sessions(user_id: str) -> int:
+    sessions = get_sessions_collection()
+    empty_sessions = list(
+        sessions.find(
+            {
+                "user_id": user_id,
+                "last_message_at": None,
+                "$or": [
+                    {"has_documents": {"$exists": False}},
+                    {"has_documents": False},
+                ],
+            }
+        )
+    )
+    if not empty_sessions:
+        return 0
+
+    empty_session_ids = [str(session["_id"]) for session in empty_sessions]
+    sessions.delete_many(
+        {
+            "user_id": user_id,
+            "last_message_at": None,
+            "$or": [
+                {"has_documents": {"$exists": False}},
+                {"has_documents": False},
+            ],
+        }
+    )
+
+    user_doc = get_users_collection().find_one({"_id": ObjectId(user_id)})
+    if user_doc and user_doc.get("active_session_id") in empty_session_ids:
+        set_active_session(user_id, None)
+
+    return len(empty_session_ids)
 
 
 def serialize_session(session_doc: dict[str, Any]) -> dict[str, Any]:
@@ -163,6 +200,7 @@ def serialize_session(session_doc: dict[str, Any]) -> dict[str, Any]:
 
 
 def get_user_sessions(user_id: str) -> list[dict[str, Any]]:
+    delete_empty_sessions(user_id)
     sessions = get_sessions_collection()
     session_docs = list(
         sessions.find({"user_id": user_id}).sort([("last_message_at", -1), ("updated_at", -1), ("created_at", -1)])
@@ -175,7 +213,14 @@ def get_session_for_user(session_id: str, user_id: str) -> dict[str, Any] | None
     return session_doc
 
 
-def set_active_session(user_id: str, session_id: str) -> None:
+def set_session_has_documents(session_id: str, user_id: str, has_documents: bool) -> None:
+    get_sessions_collection().update_one(
+        {"_id": ObjectId(session_id), "user_id": user_id},
+        {"$set": {"has_documents": has_documents, "updated_at": _utcnow()}},
+    )
+
+
+def set_active_session(user_id: str, session_id: str | None) -> None:
     get_users_collection().update_one(
         {"_id": ObjectId(user_id)},
         {"$set": {"active_session_id": session_id, "updated_at": _utcnow()}},
@@ -197,6 +242,19 @@ def ensure_active_session(user_id: str) -> dict[str, Any]:
     session = create_chat_session(user_id)
     set_active_session(user_id, session["id"])
     return session
+
+
+def get_active_session(user_id: str) -> dict[str, Any] | None:
+    active_session_id = get_active_session_id(user_id)
+    if not active_session_id:
+        return None
+
+    session_doc = get_session_for_user(active_session_id, user_id)
+    if not session_doc or not session_doc.get("last_message_at"):
+        set_active_session(user_id, None)
+        return None
+
+    return serialize_session(session_doc)
 
 
 def list_messages(session_id: str, user_id: str) -> list[dict[str, Any]]:
