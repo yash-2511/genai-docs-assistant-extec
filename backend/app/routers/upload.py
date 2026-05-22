@@ -12,16 +12,13 @@ import uuid
 from datetime import datetime
 from urllib.parse import unquote
 
-from app.config import UPLOAD_DIR, FAISS_DB_PATH
+from app.config import UPLOAD_DIR
 
 from app.services.document_service import (
-    load_pdf,
+    load_document,
     split_documents
 )
-
-from app.services.vector_service import (
-    create_vector_store
-)
+from app.services.vector_service import rebuild_index_from_uploads
 
 router = APIRouter()
 
@@ -44,10 +41,10 @@ def _save_documents_meta(documents_meta):
 
 def _sync_documents_meta():
     documents_meta = _load_documents_meta()
-    pdf_files = _get_pdf_files()
+    document_files = _get_document_files()
     used_ids = set(documents_meta.keys())
 
-    for filename in pdf_files:
+    for filename in document_files:
         if filename in documents_meta.values():
             continue
 
@@ -61,7 +58,7 @@ def _sync_documents_meta():
     stale_ids = [
         document_id
         for document_id, filename in documents_meta.items()
-        if filename not in pdf_files
+        if filename not in document_files
     ]
 
     for document_id in stale_ids:
@@ -71,33 +68,13 @@ def _sync_documents_meta():
     return documents_meta
 
 
-def _get_pdf_files():
+def _get_document_files():
     return sorted(
         filename
         for filename in os.listdir(UPLOAD_DIR)
-        if filename.lower().endswith(".pdf")
+        if filename.lower().endswith((".pdf", ".txt"))
         and os.path.isfile(os.path.join(UPLOAD_DIR, filename))
     )
-
-
-def _rebuild_vector_store_from_uploads():
-    pdf_files = _get_pdf_files()
-
-    if not pdf_files:
-        for index_file in ("index.faiss", "index.pkl"):
-            file_path = os.path.join(FAISS_DB_PATH, index_file)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        return
-
-    all_chunks = []
-
-    for filename in pdf_files:
-        file_path = os.path.join(UPLOAD_DIR, filename)
-        documents = load_pdf(file_path)
-        all_chunks.extend(split_documents(documents))
-
-    create_vector_store(all_chunks)
 
 
 def _document_payload(filename):
@@ -123,10 +100,10 @@ async def upload_file(
 ):
 
     # Validate file
-    if not file.filename.endswith(".pdf"):
+    if not file.filename.lower().endswith((".pdf", ".txt")):
         raise HTTPException(
             status_code=400,
-            detail="Only PDF files allowed"
+            detail="Only PDF and TXT files allowed"
         )
 
     try:
@@ -140,26 +117,21 @@ async def upload_file(
             file.filename
         )
 
-        # Save PDF
+        # Save document
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(
                 file.file,
                 buffer
             )
 
-        # Load PDF
-        documents = load_pdf(file_path)
+        documents = load_document(file_path)
+        chunks = split_documents(documents)
 
-        # Split into chunks
-        chunks = split_documents(
-            documents
-        )
-
-        # Create FAISS DB
-        create_vector_store(chunks)
+        _sync_documents_meta()
+        rebuild_index_from_uploads()
 
         return {
-            "message": "PDF uploaded successfully",
+            "message": "Document uploaded successfully",
             "id": document_id,
             "filename": file.filename,
             "total_chunks": len(chunks)
@@ -208,7 +180,7 @@ def delete_document(document_id: str):
         os.remove(file_path)
         documents_meta.pop(document_id, None)
         _save_documents_meta(documents_meta)
-        _rebuild_vector_store_from_uploads()
+        rebuild_index_from_uploads()
 
         return {
             "message": "Document deleted successfully",

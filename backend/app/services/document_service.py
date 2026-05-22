@@ -1,12 +1,15 @@
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 
 from langchain_text_splitters import (
     RecursiveCharacterTextSplitter
 )
 
-def load_pdf(file_path):
+def load_document(file_path):
 
-    loader = PyPDFLoader(file_path)
+    if file_path.lower().endswith(".txt"):
+        loader = TextLoader(file_path, encoding="utf-8")
+    else:
+        loader = PyPDFLoader(file_path)
 
     documents = loader.load()
 

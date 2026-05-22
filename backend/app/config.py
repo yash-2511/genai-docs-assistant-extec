@@ -1,6 +1,8 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
+load_dotenv(dotenv_path=Path(__file__).with_name(".env"))
 load_dotenv()
 
 
@@ -26,8 +28,35 @@ MODEL_NAME = os.getenv(
     "llama3.2"
 )
 
-UPLOAD_DIR = "app/data/uploads"
+PINECONE_API_KEY = (
+    os.getenv("PINECONE_API_KEY")
+    or os.getenv("pincone_api")
+    or os.getenv("pinecone_api")
+    or ""
+)
 
-FAISS_DB_PATH = "app/data/faiss_index"
+PINECONE_INDEX_NAME = os.getenv(
+    "PINECONE_INDEX_NAME",
+    "genai-doc-assistant"
+)
+
+PINECONE_CLOUD = os.getenv(
+    "PINECONE_CLOUD",
+    "aws"
+)
+
+PINECONE_REGION = os.getenv(
+    "PINECONE_REGION",
+    "us-east-1"
+)
+
+PINECONE_NAMESPACE = os.getenv(
+    "PINECONE_NAMESPACE",
+    ""
+)
+
+PINECONE_DIMENSION = int(os.getenv("PINECONE_DIMENSION", "384"))
+
+UPLOAD_DIR = "app/data/uploads"
 
 RETRIEVAL_TOP_K = _get_retrieval_top_k()
