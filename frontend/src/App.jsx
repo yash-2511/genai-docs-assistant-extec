@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { ChatWindow } from './components/ChatWindow'
-import { ConnectionDrawer } from './components/ConnectionDrawer'
-import { ContextRail } from './components/ContextRail'
 import { Sidebar } from './components/Sidebar'
 import { useChat } from './hooks/useChat'
 import { useSessions } from './hooks/useSessions'
-import { BASE_URL, STREAM_ENABLED } from './config'
+import { BASE_URL } from './config'
 import { uploadDocument } from './api/client'
 import { normalizeMessages } from './utils/helpers'
 
@@ -18,7 +16,6 @@ function getUrlSessionId() {
 export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
   const [booting, setBooting] = useState(true)
   const [connectionState, setConnectionState] = useState('checking')
   const [draftTitle, setDraftTitle] = useState('New chat')
@@ -28,11 +25,6 @@ export default function App() {
 
   const sessions = useSessions()
   const chat = useChat()
-
-  const latestSources = useMemo(() => {
-    const lastAssistant = [...chat.messages].reverse().find((message) => message.role === 'assistant' && !message.error)
-    return Array.isArray(lastAssistant?.sources) ? lastAssistant.sources : []
-  }, [chat.messages])
 
   async function loadSession(sessionId) {
     if (!sessionId || sessionId === 'draft') {
@@ -211,10 +203,10 @@ export default function App() {
         error={sessions.error}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
+        onOpenMobile={() => setMobileSidebarOpen(true)}
         onNewChat={handleNewChat}
         onSelectSession={handleOpenSession}
         onDeleteSession={handleDeleteSession}
-        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
@@ -244,14 +236,6 @@ export default function App() {
         />
       </main>
 
-      <ContextRail
-        session={sessions.activeSession}
-        messages={chat.messages}
-        latestSources={latestSources}
-        onOpenSettings={() => setSettingsOpen(true)}
-        backendStatus={backendStatus}
-      />
-
       {uploadError ? (
         <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border border-rose-500/20 bg-rose-500/10 px-4 py-2 text-sm text-rose-100 shadow-glow">
           {uploadError}
@@ -264,22 +248,6 @@ export default function App() {
         </div>
       ) : null}
 
-      <ConnectionDrawer
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        baseUrl={BASE_URL}
-        streamEnabled={STREAM_ENABLED}
-        onTokenSaved={async () => {
-          setConnectionState('checking')
-          try {
-            await sessions.refreshSessions()
-            setConnectionState('connected')
-          } catch (error) {
-            setConnectionState(error?.status === 401 ? 'auth-required' : 'offline')
-          }
-        }}
-        backendStatus={connectionState}
-      />
     </div>
   )
 }

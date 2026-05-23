@@ -17,10 +17,10 @@ function TrashIcon() {
   )
 }
 
-function GearIcon() {
+function MenuIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
-      <path fill="currentColor" d="m19.14 12.94.03-.94-.03-.94 1.74-1.36a.5.5 0 0 0 .12-.64l-1.65-2.85a.5.5 0 0 0-.6-.22l-2.05.82a7.45 7.45 0 0 0-1.63-.94l-.32-2.18a.5.5 0 0 0-.5-.43h-3.3a.5.5 0 0 0-.5.43l-.32 2.18c-.58.23-1.12.54-1.63.94l-2.05-.82a.5.5 0 0 0-.6.22L3 7.06a.5.5 0 0 0 .12.64l1.74 1.36-.03.94.03.94L3.12 12.3a.5.5 0 0 0-.12.64l1.65 2.85a.5.5 0 0 0 .6.22l2.05-.82c.5.4 1.05.72 1.63.94l.32 2.18a.5.5 0 0 0 .5.43h3.3a.5.5 0 0 0 .5-.43l.32-2.18c.58-.23 1.12-.54 1.63-.94l2.05.82a.5.5 0 0 0 .6-.22l1.65-2.85a.5.5 0 0 0-.12-.64l-1.74-1.36ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
+      <path fill="currentColor" d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z" />
     </svg>
   )
 }
@@ -36,10 +36,10 @@ export function Sidebar({
   error,
   onCloseMobile,
   onToggleCollapsed,
+  onOpenMobile,
   onNewChat,
   onSelectSession,
   onDeleteSession,
-  onOpenSettings,
 }) {
   return (
     <>
@@ -176,24 +176,7 @@ export function Sidebar({
             ) : null}
           </div>
 
-          <div className="border-t border-white/6 p-3">
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className={cn(
-                'flex w-full items-center gap-3 rounded-2xl border border-white/8 bg-white/5 px-3 py-3 text-left transition hover:bg-white/10',
-                collapsed && 'xl:justify-center',
-              )}
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/8 text-white/70 ring-1 ring-white/8">
-                <GearIcon />
-              </div>
-              <div className={cn('min-w-0 flex-1', collapsed && 'xl:hidden')}>
-                <div className="text-sm font-medium text-white">Settings</div>
-                <div className="text-xs text-white/45">API base URL and token</div>
-              </div>
-            </button>
-          </div>
+          <div className="border-t border-white/6 p-3" />
         </div>
       </aside>
 
@@ -204,6 +187,17 @@ export function Sidebar({
           onClick={onCloseMobile}
           aria-label="Close sidebar overlay"
         />
+      ) : null}
+
+      {!mobileOpen ? (
+        <button
+          type="button"
+          onClick={onOpenMobile}
+          className="fixed left-3 top-3 z-50 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/8 bg-[#1a1a1a]/95 text-white shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition hover:bg-white/10 xl:hidden"
+          aria-label="Open sidebar"
+        >
+          <MenuIcon />
+        </button>
       ) : null}
     </>
   )
