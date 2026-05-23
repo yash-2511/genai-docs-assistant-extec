@@ -1,15 +1,21 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
+from app.config import OPENROUTER_MODEL
+from app.services.openrouter_service import client, OpenRouterResponse
 
-from app.config import (
-    GEMINI_API_KEY,
-    GEMINI_MODEL,
-)
 
-if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY is not set")
+class OpenRouterLLM:
+    def __init__(self, model: str, temperature: float = 0.3) -> None:
+        self.model = model.strip()
+        self.temperature = temperature
 
-llm = ChatGoogleGenerativeAI(
-    model=GEMINI_MODEL,
-    google_api_key=GEMINI_API_KEY,
+    def invoke(self, prompt: str) -> OpenRouterResponse:
+        return client.chat(
+            model=self.model,
+            prompt=prompt,
+            temperature=self.temperature,
+        )
+
+
+llm = OpenRouterLLM(
+    model=OPENROUTER_MODEL,
     temperature=0.3,
 )

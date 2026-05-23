@@ -22,8 +22,10 @@ Environment variables
 - `PINECONE_REGION`
 - `MONGO_URI` or `MONGODB_URI`
 - `MONGO_DB_NAME`
-- `GEMINI_API_KEY`
-- `GEMINI_MODEL` (defaults to `gemini-2.5-flash`)
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODEL` (defaults to `openai/gpt-oss-120b:free`)
+- `OPENROUTER_EMBEDDING_MODEL` (defaults to `openai/text-embedding-3-small`)
+- `OPENROUTER_EMBEDDING_DIMENSIONS` (defaults to `384`)
 
 The backend is structured to separate API surface, application logic, and data services
 so it can be extended to support different embedding providers, vector stores, or LLMs.

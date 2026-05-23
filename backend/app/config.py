@@ -23,14 +23,36 @@ def _get_retrieval_top_k() -> int:
 
     return top_k
 
-GEMINI_MODEL = os.getenv(
-    "GEMINI_MODEL",
-    os.getenv("MODEL_NAME", "gemini-2.5-flash")
+OPENROUTER_API_KEY = os.getenv(
+    "OPENROUTER_API_KEY",
+    ""
 )
 
-GEMINI_API_KEY = os.getenv(
-    "GEMINI_API_KEY",
-    os.getenv("GOOGLE_API_KEY", "")
+OPENROUTER_MODEL = os.getenv(
+    "OPENROUTER_MODEL",
+    "openai/gpt-oss-120b:free"
+)
+
+OPENROUTER_EMBEDDING_MODEL = os.getenv(
+    "OPENROUTER_EMBEDDING_MODEL",
+    "openai/text-embedding-3-small"
+)
+
+OPENROUTER_EMBEDDING_DIMENSIONS = int(os.getenv("OPENROUTER_EMBEDDING_DIMENSIONS", "384"))
+
+OPENROUTER_BASE_URL = os.getenv(
+    "OPENROUTER_BASE_URL",
+    "https://openrouter.ai/api/v1"
+)
+
+OPENROUTER_SITE_URL = os.getenv(
+    "OPENROUTER_SITE_URL",
+    ""
+)
+
+OPENROUTER_APP_NAME = os.getenv(
+    "OPENROUTER_APP_NAME",
+    "genai-doc-assistant"
 )
 
 PINECONE_API_KEY = (
