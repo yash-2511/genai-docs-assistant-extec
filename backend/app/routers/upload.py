@@ -1,195 +1,166 @@
-from fastapi import (
-    APIRouter,
-    UploadFile,
-    File,
-    HTTPException
-)
+from __future__ import annotations
 
-import shutil
 import os
-import json
-import uuid
+import shutil
 from datetime import datetime
 from urllib.parse import unquote
 
-from app.config import UPLOAD_DIR
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from app.services.document_service import (
-    load_document,
-    split_documents
+from app.config import UPLOAD_DIR
+from app.dependencies.auth import get_current_user
+from app.services.auth_service import (
+    create_chat_session,
+    get_active_session_id,
+    get_session_for_user,
+    set_active_session,
+    set_session_has_documents,
 )
-from app.services.vector_service import rebuild_index_from_uploads
+from app.services.document_service import (
+    get_session_upload_dir,
+    get_supported_document_extensions,
+    list_session_documents,
+    load_document,
+    session_has_documents,
+    split_documents,
+)
+from app.services.vector_service import rebuild_session_index_from_uploads
 
 router = APIRouter()
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-DOCUMENTS_META_PATH = os.path.join(UPLOAD_DIR, "documents.json")
 
 
-def _load_documents_meta():
-    if os.path.exists(DOCUMENTS_META_PATH):
-        with open(DOCUMENTS_META_PATH, "r", encoding="utf-8") as meta_file:
-            return json.load(meta_file)
+def _resolve_target_session_id(current_user: dict, requested_session_id: str | None, allow_create: bool = True) -> str:
+    user_id = current_user["id"]
 
-    return {}
+    if requested_session_id:
+        session_doc = get_session_for_user(requested_session_id, user_id)
+        if not session_doc:
+            raise HTTPException(status_code=404, detail="Session not found")
+        set_active_session(user_id, requested_session_id)
+        return requested_session_id
 
+    active_session_id = get_active_session_id(user_id)
+    if active_session_id:
+        session_doc = get_session_for_user(active_session_id, user_id)
+        if session_doc:
+            return active_session_id
 
-def _save_documents_meta(documents_meta):
-    with open(DOCUMENTS_META_PATH, "w", encoding="utf-8") as meta_file:
-        json.dump(documents_meta, meta_file, indent=2)
+    if not allow_create:
+        raise HTTPException(status_code=400, detail="No active session selected")
 
-
-def _sync_documents_meta():
-    documents_meta = _load_documents_meta()
-    document_files = _get_document_files()
-    used_ids = set(documents_meta.keys())
-
-    for filename in document_files:
-        if filename in documents_meta.values():
-            continue
-
-        document_id = str(uuid.uuid4())
-        while document_id in used_ids:
-            document_id = str(uuid.uuid4())
-
-        documents_meta[document_id] = filename
-        used_ids.add(document_id)
-
-    stale_ids = [
-        document_id
-        for document_id, filename in documents_meta.items()
-        if filename not in document_files
-    ]
-
-    for document_id in stale_ids:
-        documents_meta.pop(document_id, None)
-
-    _save_documents_meta(documents_meta)
-    return documents_meta
+    new_session = create_chat_session(user_id)
+    set_active_session(user_id, new_session["id"])
+    return new_session["id"]
 
 
-def _get_document_files():
-    return sorted(
-        filename
-        for filename in os.listdir(UPLOAD_DIR)
-        if filename.lower().endswith((".pdf", ".txt"))
-        and os.path.isfile(os.path.join(UPLOAD_DIR, filename))
-    )
-
-
-def _document_payload(filename):
-    file_path = os.path.join(UPLOAD_DIR, filename)
+def _session_document_payload(base_dir: str, filename: str) -> dict:
+    file_path = os.path.join(base_dir, filename)
     stat_result = os.stat(file_path)
-
     return {
         "id": filename,
         "filename": filename,
         "size": stat_result.st_size,
-        "updated_at": datetime.fromtimestamp(stat_result.st_mtime).isoformat()
+        "updated_at": datetime.fromtimestamp(stat_result.st_mtime).isoformat(),
     }
 
 
-def _document_payload_from_meta(document_id, filename):
-    payload = _document_payload(filename)
-    payload["id"] = document_id
-    return payload
-
 @router.post("/upload", tags=["Upload API"])
 async def upload_file(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    session_id: str | None = Form(default=None),
+    current_user=Depends(get_current_user),
 ):
+    filename = os.path.basename(file.filename or "").strip()
+    if not filename:
+        raise HTTPException(status_code=400, detail="Please upload a valid file")
 
-    # Validate file
-    if not file.filename.lower().endswith((".pdf", ".txt")):
+    supported_extensions = tuple(sorted(get_supported_document_extensions()))
+    if not filename.lower().endswith(supported_extensions):
         raise HTTPException(
             status_code=400,
-            detail="Only PDF and TXT files allowed"
+            detail="Unsupported file type. Please upload PDF, TXT, DOCX, MD, CSV, JSON, HTML, or HTM files.",
         )
+
+    target_session_id = _resolve_target_session_id(current_user, session_id)
+    session_upload_dir = get_session_upload_dir(UPLOAD_DIR, current_user["id"], target_session_id)
+    os.makedirs(session_upload_dir, exist_ok=True)
+
+    file_path = os.path.join(session_upload_dir, filename)
+    if os.path.exists(file_path):
+        stem, extension = os.path.splitext(filename)
+        dedup_suffix = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        filename = f"{stem}-{dedup_suffix}{extension}"
+        file_path = os.path.join(session_upload_dir, filename)
 
     try:
-        documents_meta = _load_documents_meta()
-        document_id = str(uuid.uuid4())
-        while document_id in documents_meta:
-            document_id = str(uuid.uuid4())
-
-        file_path = os.path.join(
-            UPLOAD_DIR,
-            file.filename
-        )
-
-        # Save document
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(
-                file.file,
-                buffer
-            )
+            shutil.copyfileobj(file.file, buffer)
 
         documents = load_document(file_path)
         chunks = split_documents(documents)
 
-        _sync_documents_meta()
-        rebuild_index_from_uploads()
+        if not chunks or not any((chunk.page_content or "").strip() for chunk in chunks):
+            os.remove(file_path)
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded file is blank or contains no extractable text.",
+            )
+
+        total_chunks = rebuild_session_index_from_uploads(current_user["id"], target_session_id)
+        set_session_has_documents(target_session_id, current_user["id"], True)
 
         return {
             "message": "Document uploaded successfully",
-            "id": document_id,
-            "filename": file.filename,
-            "total_chunks": len(chunks)
+            "filename": filename,
+            "session_id": target_session_id,
+            "total_chunks": total_chunks,
         }
-
-    except Exception as e:
-
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.get("/documents", tags=["Documents API"])
-def list_documents():
-    documents_meta = _sync_documents_meta()
+def list_documents(session_id: str | None = None, current_user=Depends(get_current_user)):
+    target_session_id = _resolve_target_session_id(current_user, session_id, allow_create=False)
+    session_upload_dir = get_session_upload_dir(UPLOAD_DIR, current_user["id"], target_session_id)
+    filenames = list_session_documents(UPLOAD_DIR, current_user["id"], target_session_id)
 
     return {
-        "total": len(documents_meta),
-        "documents": [
-            _document_payload_from_meta(document_id, filename)
-            for document_id, filename in sorted(documents_meta.items(), key=lambda item: item[1])
-        ]
+        "total": len(filenames),
+        "session_id": target_session_id,
+        "documents": [_session_document_payload(session_upload_dir, name) for name in filenames],
     }
 
 
 @router.delete("/documents/{document_id}", tags=["Documents API"])
-def delete_document(document_id: str):
-    document_id = os.path.basename(unquote(document_id))
-    documents_meta = _load_documents_meta()
-    filename = documents_meta.get(document_id)
-
+def delete_document(document_id: str, session_id: str | None = None, current_user=Depends(get_current_user)):
+    target_session_id = _resolve_target_session_id(current_user, session_id, allow_create=False)
+    filename = os.path.basename(unquote(document_id or "")).strip()
     if not filename:
-        documents_meta = _sync_documents_meta()
-        filename = documents_meta.get(document_id)
+        raise HTTPException(status_code=400, detail="Invalid document id")
 
-    file_path = os.path.join(UPLOAD_DIR, filename) if filename else None
-
-    if not filename or not os.path.isfile(file_path):
-        raise HTTPException(
-            status_code=404,
-            detail="Document not found"
-        )
+    session_upload_dir = get_session_upload_dir(UPLOAD_DIR, current_user["id"], target_session_id)
+    file_path = os.path.join(session_upload_dir, filename)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Document not found")
 
     try:
         os.remove(file_path)
-        documents_meta.pop(document_id, None)
-        _save_documents_meta(documents_meta)
-        rebuild_index_from_uploads()
+        total_chunks = rebuild_session_index_from_uploads(current_user["id"], target_session_id)
+        has_docs = session_has_documents(UPLOAD_DIR, current_user["id"], target_session_id)
+        set_session_has_documents(target_session_id, current_user["id"], has_docs)
 
         return {
             "message": "Document deleted successfully",
-            "document_id": document_id
+            "document_id": filename,
+            "session_id": target_session_id,
+            "total_chunks": total_chunks,
         }
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc

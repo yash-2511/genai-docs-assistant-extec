@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+    background: #111111;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: theme('fontFamily.sans');
+    background:
+      radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 28%),
+      radial-gradient(circle at top right, rgba(251, 146, 60, 0.1), transparent 24%),
+      linear-gradient(180deg, #0f0f0f 0%, #121212 40%, #171717 100%);
+    color: white;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: rgba(249, 115, 22, 0.3);
+    color: white;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(249, 115, 22, 0.45);
+    background-clip: content-box;
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 180ms ease-out;
+}
+
+.animate-pulseDots {
+  animation: pulseDots 1.1s infinite ease-in-out;
+}

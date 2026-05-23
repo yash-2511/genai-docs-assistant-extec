@@ -1,0 +1,62 @@
+# Root .gitignore for genai-doc-assistant
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+frontend/.vite/
+frontend/.turbo/
+
+# Build outputs
+dist/
+build/
+
+# Python / backend
+backend/.venv/
+backend/venv/
+backend/env/
+backend/.env
+backend/.env.*
+backend/__pycache__/
+backend/**/*.pyc
+backend/*.pyc
+backend/.pytest_cache/
+backend/.mypy_cache/
+
+# Uploaded files (ignore user uploads but keep documents.json manifest)
+backend/app/data/uploads/*
+!backend/app/data/uploads/documents.json
+
+# IDEs and editors
+.vscode/
+.idea/
+.vscode/**
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS generated files
+ehthumbs.db
+Icon?
+
+# Coverage
+coverage/
+htmlcov/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+
+# Misc
+.env.local
+.env.production

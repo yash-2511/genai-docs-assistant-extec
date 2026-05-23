@@ -23,9 +23,14 @@ def _get_retrieval_top_k() -> int:
 
     return top_k
 
-MODEL_NAME = os.getenv(
-    "MODEL_NAME",
-    "llama3.2"
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL",
+    os.getenv("MODEL_NAME", "gemini-2.5-flash")
+)
+
+GEMINI_API_KEY = os.getenv(
+    "GEMINI_API_KEY",
+    os.getenv("GOOGLE_API_KEY", "")
 )
 
 PINECONE_API_KEY = (
@@ -56,6 +61,18 @@ PINECONE_NAMESPACE = os.getenv(
 )
 
 PINECONE_DIMENSION = int(os.getenv("PINECONE_DIMENSION", "384"))
+
+MONGO_URI = os.getenv(
+    "MONGO_URI",
+    os.getenv("MONGODB_URI", "")
+)
+
+MONGO_DB_NAME = os.getenv(
+    "MONGO_DB_NAME",
+    "genai_doc_assistant"
+)
+
+AUTH_TOKEN_DAYS = int(os.getenv("AUTH_TOKEN_DAYS", "30"))
 
 UPLOAD_DIR = "app/data/uploads"
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import upload, chat
+from app.routers import auth, chat, sessions, upload
 
 app = FastAPI(
     title="RAG Chatbot API"
@@ -19,6 +19,8 @@ app.add_middleware(
 # Routers
 app.include_router(upload.router)
 app.include_router(chat.router)
+app.include_router(auth.router)
+app.include_router(sessions.router)
 
 @app.get("/", tags=["custom API"])
 def root():
