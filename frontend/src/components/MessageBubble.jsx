@@ -46,7 +46,7 @@ export function MessageBubble({ message, onRetry }) {
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[min(760px,100%)] rounded-3xl bg-gradient-to-br from-accent/88 to-accentSoft/78 px-4 py-3 text-white shadow-[0_14px_35px_rgba(139,92,246,0.18)] ring-1 ring-white/10">
+        <div className="max-w-[min(760px,100%)] rounded-3xl border border-white/8 bg-panelSoft px-4 py-3 text-white ring-1 ring-white/8">
           <div className="whitespace-pre-wrap text-[15px] leading-7 tracking-[0.01em]">{message.content}</div>
           {message.createdAt ? (
             <div className="mt-2 text-right text-[11px] uppercase tracking-[0.2em] text-white/55" title={formatTimestamp(message.createdAt)}>
@@ -62,7 +62,7 @@ export function MessageBubble({ message, onRetry }) {
     <div className="flex justify-start gap-3">
       <AssistantAvatar />
       <div className="max-w-[min(760px,100%)] space-y-3">
-        <div className={cn('rounded-3xl border border-white/8 bg-[#1a1a1a] px-4 py-3 text-white/88 shadow-[0_12px_30px_rgba(0,0,0,0.12)]')}>
+        <div className={cn('rounded-3xl border border-white/8 bg-panel px-4 py-3 text-white/88')}>
           <div className="whitespace-pre-wrap text-[15px] leading-7 tracking-[0.01em]">{message.content}</div>
           {message.createdAt ? (
             <div className="mt-3 text-[11px] uppercase tracking-[0.2em] text-white/35" title={formatTimestamp(message.createdAt)}>

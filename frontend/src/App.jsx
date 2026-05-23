@@ -29,8 +29,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false)
   const [authError, setAuthError] = useState('')
   const [authMode, setAuthMode] = useState('login')
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [booting, setBooting] = useState(true)
   const [draftTitle, setDraftTitle] = useState('New chat')
   const [uploading, setUploading] = useState(false)
@@ -138,7 +137,7 @@ export default function App() {
     setDraftTitle('New chat')
     setUploadError('')
     setUploadStatus('')
-    setMobileSidebarOpen(false)
+    setSidebarOpen(true)
   }
 
   useEffect(() => {
@@ -230,7 +229,7 @@ export default function App() {
   }
 
   async function handleOpenSession(sessionId) {
-    setMobileSidebarOpen(false)
+    setSidebarOpen(true)
     await loadSession(sessionId)
   }
 
@@ -239,7 +238,7 @@ export default function App() {
     chat.clearMessages()
     setDraftTitle('New chat')
     chat.setInput('')
-    setMobileSidebarOpen(false)
+    setSidebarOpen(true)
   }
 
   async function handleDeleteSession(sessionId) {
@@ -249,7 +248,7 @@ export default function App() {
     } else {
       chat.clearMessages()
     }
-    setMobileSidebarOpen(false)
+    setSidebarOpen(true)
   }
 
   async function handleAttach(file) {
@@ -308,29 +307,27 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-shell text-white">
+    <div className="flex h-screen overflow-hidden bg-shell text-white">
       <Sidebar
+        open={sidebarOpen}
         sessions={sessionList}
         activeSessionId={activeSession?.draft ? 'draft' : activeSessionId}
         draftSessionActive={draftSessionActive}
         draftTitle={draftTitle}
-        collapsed={sidebarCollapsed}
-        mobileOpen={mobileSidebarOpen}
         loading={booting || sessionsLoading}
         error={sessionsError}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
-        onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
-        onOpenMobile={() => setMobileSidebarOpen(true)}
+        onOpenSidebar={() => setSidebarOpen(true)}
+        onCloseSidebar={() => setSidebarOpen(false)}
         onNewChat={handleNewChat}
         onSelectSession={handleOpenSession}
         onDeleteSession={handleDeleteSession}
+        onLogout={handleLogout}
       />
 
-      <main className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <ChatWindow
           session={activeSession}
           sessionTitle={activeSession?.draft ? draftTitle : activeSession?.title}
-          user={authUser}
           messages={chat.messages}
           input={chat.input}
           onInputChange={chat.setInput}
@@ -338,7 +335,6 @@ export default function App() {
           onRetry={handleRetry}
           onAttach={handleAttach}
           isSending={chat.isSending || uploading}
-          onToggleSidebar={() => setMobileSidebarOpen(true)}
           onRenameSession={(nextTitle) => {
             if (activeSession?.draft) {
               setDraftTitle(nextTitle)
@@ -348,8 +344,7 @@ export default function App() {
             }
           }}
           onSuggestionPick={handleSuggestionPick}
-          onLogout={handleLogout}
-          onRequestFocus={() => setMobileSidebarOpen(false)}
+          onRequestFocus={() => setSidebarOpen(true)}
         />
       </main>
 

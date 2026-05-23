@@ -58,47 +58,41 @@ export function InputBar({
   }
 
   return (
-    <div className="border-t border-white/8 bg-[#171717]/96 px-4 py-4 backdrop-blur-xl sm:px-5">
+    <div className="border-t border-white/8 bg-panel/96 px-4 py-3 backdrop-blur-xl sm:px-5">
       <div className="mx-auto max-w-4xl">
-        <div className="rounded-[28px] border border-white/8 bg-[#1c1c1c] p-3 shadow-[0_20px_50px_rgba(0,0,0,0.22)]">
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={(event) => onChange?.(event.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={disabled}
-            rows={1}
-            placeholder={placeholder}
-            className="min-h-[58px] w-full resize-none border-0 bg-transparent px-2 py-3 text-[15px] leading-7 text-white placeholder:text-white/35 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
-          />
+        <div className="rounded-[24px] border border-white/8 bg-panelSoft px-3 py-3">
+          <div className="flex items-end gap-2">
+            <button
+              type="button"
+              onClick={handleAttachClick}
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl border border-white/8 bg-white/5 px-3 text-sm text-white/75 transition hover:bg-accent/12 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={disabled}
+            >
+              <PaperclipIcon />
+              Attach
+            </button>
+            <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
 
-          <div className="mt-2 flex items-center justify-between gap-3 border-t border-white/6 px-1 pt-3">
-            <div className="flex items-center gap-2 text-white/45">
-              <button
-                type="button"
-                onClick={handleAttachClick}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/8 bg-white/5 px-3 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={disabled}
-              >
-                <PaperclipIcon />
-                Attach
-              </button>
-              <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} />
-              <span className="hidden text-xs sm:inline">Shift+Enter for newline</span>
-            </div>
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(event) => onChange?.(event.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={disabled}
+              rows={1}
+              placeholder={placeholder}
+              className="min-h-11 max-h-28 flex-1 resize-none border-0 bg-transparent px-1 py-2.5 text-[15px] leading-6 text-white placeholder:text-white/35 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
+            />
 
-            <div className="flex items-center gap-3">
-              <div className="text-xs text-white/35">{charCount.toLocaleString()} chars</div>
-              <button
-                type="button"
-                onClick={onSend}
-                disabled={disabled || !value.trim()}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-white/92 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/35"
-              >
-                <SendIcon />
-                Send
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={disabled || !value.trim()}
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-2xl bg-accent px-4 text-sm font-medium text-white transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/35"
+            >
+              <SendIcon />
+              Send
+            </button>
           </div>
         </div>
       </div>

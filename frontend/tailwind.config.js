@@ -8,12 +8,12 @@ export default {
         mono: ['"IBM Plex Mono"', '"SFMono-Regular"', 'monospace'],
       },
       colors: {
-        shell: '#111111',
+        shell: '#101010',
         panel: '#1a1a1a',
-        panelSoft: '#202020',
-        panelLift: '#252525',
-        accent: '#8b5cf6',
-        accentSoft: '#a78bfa',
+        panelSoft: '#222222',
+        panelLift: '#2b2b2b',
+        accent: '#f97316',
+        accentSoft: '#fb923c',
         border: 'rgba(255,255,255,0.08)',
       },
       boxShadow: {

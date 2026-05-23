@@ -19,9 +19,9 @@
     margin: 0;
     font-family: theme('fontFamily.sans');
     background:
-      radial-gradient(circle at top left, rgba(139, 92, 246, 0.16), transparent 28%),
-      radial-gradient(circle at top right, rgba(59, 130, 246, 0.08), transparent 24%),
-      linear-gradient(180deg, #0f0f10 0%, #111111 36%, #121212 100%);
+      radial-gradient(circle at top left, rgba(249, 115, 22, 0.18), transparent 28%),
+      radial-gradient(circle at top right, rgba(251, 146, 60, 0.1), transparent 24%),
+      linear-gradient(180deg, #0f0f0f 0%, #121212 40%, #171717 100%);
     color: white;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -32,7 +32,7 @@
   }
 
   ::selection {
-    background: rgba(167, 139, 250, 0.35);
+    background: rgba(249, 115, 22, 0.3);
     color: white;
   }
 
@@ -64,13 +64,13 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.14);
     border: 2px solid transparent;
     background-clip: content-box;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(249, 115, 22, 0.45);
     background-clip: content-box;
   }
 }

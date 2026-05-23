@@ -14,18 +14,9 @@ function SidebarToggleIcon() {
   )
 }
 
-function EditIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
-      <path fill="currentColor" d="m3 17.25 11.19-11.19 3.75 3.75L6.75 21H3v-3.75Zm14.12-12.1 1.81-1.81a1.5 1.5 0 0 1 2.12 2.12l-1.81 1.81-2.12-2.12Z" />
-    </svg>
-  )
-}
-
 export function ChatWindow({
   session,
   sessionTitle,
-  user,
   messages,
   input,
   onInputChange,
@@ -36,7 +27,6 @@ export function ChatWindow({
   onToggleSidebar,
   onRenameSession,
   onSuggestionPick,
-  onLogout,
   onRequestFocus,
 }) {
   const threadRef = useRef(null)
@@ -64,13 +54,13 @@ export function ChatWindow({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-shell">
-      <header className="border-b border-white/6 bg-[#141414]/95 px-4 py-4 backdrop-blur-xl sm:px-6">
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-shell">
+      <header className="border-b border-white/6 bg-panel/95 px-4 py-4 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-4xl items-center gap-3">
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="inline-flex rounded-2xl border border-white/8 bg-white/5 p-2 text-white/75 transition hover:bg-white/10 hover:text-white xl:hidden"
+            className="inline-flex rounded-2xl border border-white/8 bg-panelSoft/80 p-2 text-white/75 transition hover:bg-accent/15 hover:text-white xl:hidden"
             aria-label="Open sidebar"
           >
             <SidebarToggleIcon />
@@ -93,40 +83,20 @@ export function ChatWindow({
                 placeholder="New chat"
                 onFocus={onRequestFocus}
               />
-              <button
-                type="button"
-                onClick={commitTitle}
-                className="inline-flex items-center gap-1 rounded-full border border-white/8 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/65 transition hover:bg-white/10 hover:text-white"
-              >
-                <EditIcon />
-                Rename
-              </button>
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-white/45">
-              <span className="inline-flex items-center rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-white/65">
-                Signed in as {user?.name || user?.email || 'Account'}
-              </span>
-              <button
-                type="button"
-                onClick={onLogout}
-                className="inline-flex items-center rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-white/65 transition hover:bg-white/10 hover:text-white"
-              >
-                Logout
-              </button>
-              {session?.last_message_at ? (
-                <span>Updated {formatRelativeTime(session.last_message_at)}</span>
-              ) : null}
-            </div>
+            {session?.last_message_at ? (
+              <div className="mt-1 text-xs text-white/45">Updated {formatRelativeTime(session.last_message_at)}</div>
+            ) : null}
           </div>
         </div>
       </header>
 
-      <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+      <div ref={threadRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-thin px-4 py-6 sm:px-6">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
           {!messages.length ? (
-            <div className="flex min-h-[calc(100vh-230px)] flex-col items-center justify-center px-2 text-center">
+            <div className="flex min-h-full flex-1 flex-col justify-center px-2 text-center">
               <div className="max-w-2xl space-y-6">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.75rem] bg-white/6 text-2xl font-semibold text-white ring-1 ring-white/8">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.75rem] bg-accent/15 text-2xl font-semibold text-accent ring-1 ring-accent/20">
                   R
                 </div>
                 <div className="space-y-3">
@@ -141,11 +111,21 @@ export function ChatWindow({
                       key={suggestion}
                       type="button"
                       onClick={() => onSuggestionPick?.(suggestion)}
-                      className="rounded-3xl border border-white/8 bg-white/5 px-4 py-4 text-left text-sm leading-6 text-white/80 transition hover:border-white/14 hover:bg-white/8"
+                      className="rounded-3xl border border-white/8 bg-panelSoft/70 px-4 py-4 text-left text-sm leading-6 text-white/80 transition hover:border-accent/30 hover:bg-accent/10"
                     >
                       {truncate(suggestion, 120)}
                     </button>
                   ))}
+                </div>
+
+                <div className="pt-2">
+                  <InputBar
+                    value={input}
+                    onChange={onInputChange}
+                    onSend={onSend}
+                    onAttach={onAttach}
+                    disabled={isSending}
+                  />
                 </div>
               </div>
             </div>
@@ -155,7 +135,7 @@ export function ChatWindow({
 
           {isSending ? (
             <div className="flex justify-start gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-white/8 text-xs font-semibold text-white ring-1 ring-white/8">A</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-accent/15 text-xs font-semibold text-accent ring-1 ring-accent/20">A</div>
               <TypingIndicator />
             </div>
           ) : null}
@@ -163,13 +143,15 @@ export function ChatWindow({
         </div>
       </div>
 
-      <InputBar
-        value={input}
-        onChange={onInputChange}
-        onSend={onSend}
-        onAttach={onAttach}
-        disabled={isSending}
-      />
+      {messages.length ? (
+        <InputBar
+          value={input}
+          onChange={onInputChange}
+          onSend={onSend}
+          onAttach={onAttach}
+          disabled={isSending}
+        />
+      ) : null}
     </div>
   )
 }

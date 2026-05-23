@@ -17,7 +17,7 @@ export function SourceCard({ source }) {
   const snippet = useMemo(() => source?.snippet || '', [source])
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-[#191919] px-3 py-3 shadow-[0_8px_25px_rgba(0,0,0,0.16)] transition hover:border-white/12 hover:bg-[#1c1c1c]">
+    <div className="rounded-2xl border border-white/8 bg-panel px-3 py-3 shadow-[0_8px_25px_rgba(0,0,0,0.16)] transition hover:border-accent/20 hover:bg-panelSoft">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}

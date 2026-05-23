@@ -44,29 +44,28 @@ export function AuthScreen({ mode, onModeChange, onLogin, onSignup, loading, err
 
   return (
     <div className="flex min-h-screen items-stretch bg-shell text-white">
-      <div className="hidden flex-1 flex-col justify-between border-r border-white/6 bg-[radial-gradient(circle_at_top_left,rgba(139,92,246,0.18),transparent_28%),linear-gradient(180deg,#121212_0%,#171717_100%)] px-10 py-10 lg:flex">
+      <div className="hidden flex-1 flex-col justify-between border-r border-white/6 bg-[radial-gradient(circle_at_top_left,rgba(249,115,22,0.22),transparent_28%),linear-gradient(180deg,#121212_0%,#181818_100%)] px-10 py-10 lg:flex">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/75">
+          <div className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-4 py-2 text-sm font-medium text-orange-100">
             <SparkIcon />
-            Doc RAG Chat
+            RAG Chat
           </div>
           <h1 className="mt-10 max-w-xl text-5xl font-semibold tracking-tight text-white">
             Sign in to your document-aware chat workspace.
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-white/55">
-            Keep your sessions, uploads, and citations tied to your account through the backend auth flow.
+            Keep your sessions, uploads, and citations tied to your account Safely.
           </p>
         </div>
 
         <div className="max-w-md rounded-[2rem] border border-white/8 bg-white/5 p-5 text-sm leading-6 text-white/55 shadow-glow">
-          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">Backend</div>
-          <div className="mt-2 text-white/80">{baseUrl || 'API base URL not set'}</div>
-          <div className="mt-3">Uses `/auth/signup`, `/auth/login`, and `/auth/me` with bearer tokens.</div>
+          <div className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">Ask all you want</div>
+          
         </div>
       </div>
 
       <div className="flex w-full items-center justify-center px-4 py-8 sm:px-6 lg:w-[520px] lg:px-8">
-        <div className="w-full max-w-md rounded-[2.25rem] border border-white/8 bg-[#181818] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:p-8">
+        <div className="w-full max-w-md rounded-[2.25rem] border border-white/8 bg-panel p-6 shadow-[0_24px_80px_rgba(0,0,0,0.45)] sm:p-8">
           <div className="mb-6 flex items-center justify-between gap-3">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.22em] text-white/35">Authentication</div>
@@ -84,7 +83,7 @@ export function AuthScreen({ mode, onModeChange, onLogin, onSignup, loading, err
               onClick={() => onModeChange('login')}
               className={cn(
                 'rounded-xl px-4 py-2 transition',
-                !isSignup ? 'bg-white text-slate-950' : 'text-white/65 hover:text-white',
+                !isSignup ? 'bg-accent text-white' : 'text-white/65 hover:text-white',
               )}
             >
               Login
@@ -94,7 +93,7 @@ export function AuthScreen({ mode, onModeChange, onLogin, onSignup, loading, err
               onClick={() => onModeChange('signup')}
               className={cn(
                 'rounded-xl px-4 py-2 transition',
-                isSignup ? 'bg-white text-slate-950' : 'text-white/65 hover:text-white',
+                isSignup ? 'bg-accent text-white' : 'text-white/65 hover:text-white',
               )}
             >
               Sign up
@@ -110,7 +109,7 @@ export function AuthScreen({ mode, onModeChange, onLogin, onSignup, loading, err
                   onChange={(event) => updateField('name', event.target.value)}
                   placeholder="Your name"
                   autoComplete="name"
-                  className="mt-2 w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-white/14 focus:bg-white/8"
+                  className="mt-2 w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-accent/35 focus:bg-accent/8"
                 />
               </label>
             ) : null}
@@ -123,7 +122,7 @@ export function AuthScreen({ mode, onModeChange, onLogin, onSignup, loading, err
                 type="email"
                 placeholder="you@example.com"
                 autoComplete="email"
-                className="mt-2 w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-white/14 focus:bg-white/8"
+                className="mt-2 w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-accent/35 focus:bg-accent/8"
               />
             </label>
 
@@ -135,7 +134,7 @@ export function AuthScreen({ mode, onModeChange, onLogin, onSignup, loading, err
                 type="password"
                 placeholder="Enter password"
                 autoComplete={isSignup ? 'new-password' : 'current-password'}
-                className="mt-2 w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-white/14 focus:bg-white/8"
+                className="mt-2 w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/25 focus:border-accent/35 focus:bg-accent/8"
               />
             </label>
 
@@ -148,14 +147,13 @@ export function AuthScreen({ mode, onModeChange, onLogin, onSignup, loading, err
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex w-full items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-medium text-slate-950 transition hover:bg-white/92 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/40"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-accentSoft disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-white/40"
             >
               {loading ? 'Please wait…' : isSignup ? 'Create account' : 'Login'}
             </button>
           </form>
 
           <p className="mt-5 text-xs leading-5 text-white/35">
-            Your token is stored locally in the browser and sent as a bearer token to the backend auth and chat routes.
           </p>
         </div>
       </div>
