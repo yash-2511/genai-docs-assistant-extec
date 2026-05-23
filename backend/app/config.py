@@ -23,9 +23,14 @@ def _get_retrieval_top_k() -> int:
 
     return top_k
 
-MODEL_NAME = os.getenv(
-    "MODEL_NAME",
-    "llama3.2"
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL",
+    os.getenv("MODEL_NAME", "gemini-2.5-flash")
+)
+
+GEMINI_API_KEY = os.getenv(
+    "GEMINI_API_KEY",
+    os.getenv("GOOGLE_API_KEY", "")
 )
 
 PINECONE_API_KEY = (

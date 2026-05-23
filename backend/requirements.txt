@@ -3,10 +3,12 @@ uvicorn[standard]>=0.22
 python-dotenv
 pymongo
 langchain
-langchain-xai
+langchain-community
+langchain-google-genai
 python-multipart
 aiohttp
 pinecone
+sentence-transformers
 
 # Optional / development
 # - add any model-specific SDKs (openai, xai-sdk) if you use them explicitly

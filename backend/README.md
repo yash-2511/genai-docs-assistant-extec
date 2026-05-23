@@ -22,6 +22,8 @@ Environment variables
 - `PINECONE_REGION`
 - `MONGO_URI` or `MONGODB_URI`
 - `MONGO_DB_NAME`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL` (defaults to `gemini-2.5-flash`)
 
 The backend is structured to separate API surface, application logic, and data services
 so it can be extended to support different embedding providers, vector stores, or LLMs.

@@ -36,6 +36,16 @@ export default function App() {
   const [uploadStatus, setUploadStatus] = useState('')
   const [uploadError, setUploadError] = useState('')
 
+  useEffect(() => {
+    if (!uploadStatus) return undefined
+
+    const timeoutId = window.setTimeout(() => {
+      setUploadStatus('')
+    }, 2500)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [uploadStatus])
+
   const sessions = useSessions()
   const chat = useChat()
 

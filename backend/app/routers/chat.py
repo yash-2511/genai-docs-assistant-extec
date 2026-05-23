@@ -27,7 +27,7 @@ from app.services.auth_service import (
 )
 from app.services.document_service import session_has_documents
 
-router = APIRouter()
+router = APIRouter(prefix="/chat", tags=["Chat API"])
 
 
 def format_answer_text(answer: str) -> str:
@@ -220,7 +220,7 @@ def build_greeting_prompt(question: str, history_text: str) -> str:
     {question}
     """
 
-@router.post("/ask",tags=["Chat API"])
+@router.post("/ask")
 async def ask_question(
     request: QuestionRequest,
     current_user=Depends(get_current_user)
