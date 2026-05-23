@@ -25,6 +25,7 @@ function EditIcon() {
 export function ChatWindow({
   session,
   sessionTitle,
+  user,
   messages,
   input,
   onInputChange,
@@ -35,8 +36,7 @@ export function ChatWindow({
   onToggleSidebar,
   onRenameSession,
   onSuggestionPick,
-  connectionLabel,
-  connectionTone = 'neutral',
+  onLogout,
   onRequestFocus,
 }) {
   const threadRef = useRef(null)
@@ -103,10 +103,16 @@ export function ChatWindow({
               </button>
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-white/45">
-              <span className="inline-flex items-center rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-white/65">Backend RAG</span>
-              <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1', connectionTone === 'danger' ? 'border-rose-500/20 bg-rose-500/10 text-rose-100' : 'border-white/8 bg-white/5 text-white/65')}>
-                {connectionLabel}
+              <span className="inline-flex items-center rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-white/65">
+                Signed in as {user?.name || user?.email || 'Account'}
               </span>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex items-center rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-white/65 transition hover:bg-white/10 hover:text-white"
+              >
+                Logout
+              </button>
               {session?.last_message_at ? (
                 <span>Updated {formatRelativeTime(session.last_message_at)}</span>
               ) : null}

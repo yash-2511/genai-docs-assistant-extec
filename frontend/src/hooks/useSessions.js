@@ -157,6 +157,14 @@ export function useSessions() {
     return visibleSessions.find((session) => session.id === activeSessionId) || null
   }, [activeSessionId, draftSessionActive, visibleSessions])
 
+  const resetSessions = useCallback(() => {
+    setSessions([])
+    setActiveSessionId('')
+    setDraftSessionActive(false)
+    setLoading(false)
+    setError('')
+  }, [])
+
   return {
     sessions: visibleSessions,
     activeSession,
@@ -169,6 +177,7 @@ export function useSessions() {
     startDraftSession,
     removeSession,
     renameSession,
+    resetSessions,
     setActiveSessionId,
     setDraftSessionActive,
     setSessions,

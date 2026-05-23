@@ -111,3 +111,32 @@ export async function listDocuments(sessionId) {
   const query = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ''
   return request(`/documents${query}`)
 }
+
+export async function loginUser(payload) {
+  return request('/auth/login', {
+    method: 'POST',
+    body: {
+      email: payload.email,
+      password: payload.password,
+    },
+  })
+}
+
+export async function signupUser(payload) {
+  return request('/auth/signup', {
+    method: 'POST',
+    body: {
+      name: payload.name,
+      email: payload.email,
+      password: payload.password,
+    },
+  })
+}
+
+export async function getCurrentUser() {
+  return request('/auth/me')
+}
+
+export async function logoutUser() {
+  return request('/auth/logout', { method: 'POST' })
+}

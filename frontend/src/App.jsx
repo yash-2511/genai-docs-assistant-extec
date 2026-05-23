@@ -1,11 +1,21 @@
 import { useEffect, useState } from 'react'
 
+import { AuthScreen } from './components/AuthScreen'
 import { ChatWindow } from './components/ChatWindow'
 import { Sidebar } from './components/Sidebar'
 import { useChat } from './hooks/useChat'
 import { useSessions } from './hooks/useSessions'
 import { BASE_URL } from './config'
-import { uploadDocument } from './api/client'
+import {
+  clearStoredToken,
+  getCurrentUser,
+  getStoredToken,
+  loginUser,
+  logoutUser,
+  setStoredToken,
+  signupUser,
+  uploadDocument,
+} from './api/client'
 import { normalizeMessages } from './utils/helpers'
 
 function getUrlSessionId() {
@@ -14,10 +24,14 @@ function getUrlSessionId() {
 }
 
 export default function App() {
+  const [authStatus, setAuthStatus] = useState('checking')
+  const [authUser, setAuthUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(false)
+  const [authError, setAuthError] = useState('')
+  const [authMode, setAuthMode] = useState('login')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [booting, setBooting] = useState(true)
-  const [connectionState, setConnectionState] = useState('checking')
   const [draftTitle, setDraftTitle] = useState('New chat')
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState('')
@@ -26,44 +40,140 @@ export default function App() {
   const sessions = useSessions()
   const chat = useChat()
 
+  const {
+    sessions: sessionList,
+    activeSession,
+    activeSessionId,
+    draftSessionActive,
+    loading: sessionsLoading,
+    error: sessionsError,
+    refreshSessions,
+    openSession,
+    startDraftSession,
+    removeSession,
+    renameSession,
+    resetSessions,
+  } = sessions
+
   async function loadSession(sessionId) {
     if (!sessionId || sessionId === 'draft') {
-      sessions.startDraftSession()
+      startDraftSession()
       chat.clearMessages()
       return
     }
 
-    const result = await sessions.openSession(sessionId)
+    const result = await openSession(sessionId)
     chat.replaceMessages(result.messages)
 
-    const matchingSession = sessions.sessions.find((session) => session.id === sessionId)
+    const matchingSession = sessionList.find((session) => session.id === sessionId)
     setDraftTitle(matchingSession?.title || 'New chat')
+  }
+
+  async function initializeWorkspace(preferredSessionId = '') {
+    const payload = await refreshSessions()
+    const urlSessionId = getUrlSessionId()
+    const storedActiveSession = payload?.active_session_id || activeSessionId || ''
+    const initialSessionId = preferredSessionId || urlSessionId || storedActiveSession || ''
+
+    if (initialSessionId) {
+      await loadSession(initialSessionId)
+    } else {
+      startDraftSession()
+      chat.clearMessages()
+      setDraftTitle('New chat')
+    }
+  }
+
+  async function handleAuthSuccess(response) {
+    setStoredToken(response.access_token)
+    setAuthUser(response.user)
+    setAuthStatus('authenticated')
+    setAuthError('')
+    await initializeWorkspace(response.active_session?.id || '')
+  }
+
+  async function handleLogin(payload) {
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const response = await loginUser(payload)
+      await handleAuthSuccess(response)
+    } catch (error) {
+      setAuthError(error?.message || 'Login failed')
+      throw error
+    } finally {
+      setAuthLoading(false)
+      setBooting(false)
+    }
+  }
+
+  async function handleSignup(payload) {
+    setAuthLoading(true)
+    setAuthError('')
+    try {
+      const response = await signupUser(payload)
+      await handleAuthSuccess(response)
+    } catch (error) {
+      setAuthError(error?.message || 'Signup failed')
+      throw error
+    } finally {
+      setAuthLoading(false)
+      setBooting(false)
+    }
+  }
+
+  async function handleLogout() {
+    try {
+      await logoutUser()
+    } catch {
+      // Ignore logout errors and still clear local auth state.
+    }
+
+    clearStoredToken()
+    resetSessions()
+    chat.clearMessages()
+    setAuthUser(null)
+    setAuthStatus('unauthenticated')
+    setAuthMode('login')
+    setDraftTitle('New chat')
+    setUploadError('')
+    setUploadStatus('')
+    setMobileSidebarOpen(false)
   }
 
   useEffect(() => {
     let cancelled = false
 
     async function boot() {
+      const storedToken = getStoredToken()
+
+      if (!storedToken) {
+        if (!cancelled) {
+          resetSessions()
+          chat.clearMessages()
+          setAuthUser(null)
+          setAuthStatus('unauthenticated')
+          setAuthMode('login')
+          setBooting(false)
+        }
+        return
+      }
+
       try {
-        const payload = await sessions.refreshSessions()
+        const response = await getCurrentUser()
         if (cancelled) return
 
-        const urlSessionId = getUrlSessionId()
-        const storedActiveSession = payload?.active_session_id || sessions.activeSessionId || ''
-        const initialSessionId = urlSessionId || storedActiveSession || ''
-
-        if (initialSessionId) {
-          await loadSession(initialSessionId)
-          setConnectionState('connected')
-        } else {
-          sessions.startDraftSession()
-          chat.clearMessages()
-          setConnectionState('connected')
-        }
+        setStoredToken(response.access_token || storedToken)
+        setAuthStatus('authenticated')
+        await initializeWorkspace(response.active_session?.id || '')
       } catch (error) {
         if (cancelled) return
-        const message = error?.status === 401 ? 'auth-required' : 'offline'
-        setConnectionState(message)
+        clearStoredToken()
+        resetSessions()
+        chat.clearMessages()
+        setAuthUser(null)
+        setAuthStatus('unauthenticated')
+        setAuthMode('login')
       } finally {
         if (!cancelled) {
           setBooting(false)
@@ -95,25 +205,24 @@ export default function App() {
   }, [sessions.activeSession])
 
   async function handleSend() {
-    const currentSessionId = sessions.activeSession?.draft ? '' : sessions.activeSession?.id || ''
+    const currentSessionId = activeSession?.draft ? '' : activeSession?.id || ''
     await chat.sendMessage({
       text: chat.input,
       sessionId: currentSessionId,
       onCommitted: async (sessionId, response) => {
-        const result = await sessions.openSession(sessionId)
-        if (sessions.activeSession?.draft && draftTitle && draftTitle !== 'New chat') {
-          sessions.renameSession(sessionId, draftTitle)
+        const result = await openSession(sessionId)
+        if (activeSession?.draft && draftTitle && draftTitle !== 'New chat') {
+          renameSession(sessionId, draftTitle)
         }
-        setConnectionState('connected')
         return result.messages.length ? result.messages : normalizeMessages([
           { role: 'user', content: response.question, sources: [], created_at: new Date().toISOString() },
           { role: 'assistant', content: response.answer, sources: response.sources || [], created_at: new Date().toISOString() },
         ])
       },
     })
-    const refreshed = await sessions.refreshSessions().catch(() => null)
+    const refreshed = await refreshSessions().catch(() => null)
     if (refreshed?.active_session_id) {
-      const active = sessions.sessions.find((session) => session.id === refreshed.active_session_id)
+      const active = sessionList.find((session) => session.id === refreshed.active_session_id)
       if (active) {
         setDraftTitle(active.title)
       }
@@ -126,7 +235,7 @@ export default function App() {
   }
 
   function handleNewChat() {
-    sessions.startDraftSession()
+    startDraftSession()
     chat.clearMessages()
     setDraftTitle('New chat')
     chat.setInput('')
@@ -134,7 +243,7 @@ export default function App() {
   }
 
   async function handleDeleteSession(sessionId) {
-    const outcome = await sessions.removeSession(sessionId)
+    const outcome = await removeSession(sessionId)
     if (outcome?.messages?.length) {
       chat.replaceMessages(outcome.messages)
     } else {
@@ -149,15 +258,15 @@ export default function App() {
     setUploadStatus('')
 
     try {
-      const currentSessionId = sessions.activeSession?.draft ? '' : sessions.activeSession?.id || ''
+      const currentSessionId = activeSession?.draft ? '' : activeSession?.id || ''
       const payload = await uploadDocument({ file, sessionId: currentSessionId || undefined })
       setUploadStatus(`Uploaded ${payload?.filename || file.name}`)
 
-      const refreshed = await sessions.refreshSessions()
-      const nextSessionId = payload?.session_id || refreshed?.active_session_id || sessions.activeSessionId || ''
+      const refreshed = await refreshSessions()
+      const nextSessionId = payload?.session_id || refreshed?.active_session_id || activeSessionId || ''
 
       if (nextSessionId) {
-        const result = await sessions.openSession(nextSessionId)
+        const result = await openSession(nextSessionId)
         chat.replaceMessages(result.messages)
       }
     } catch (error) {
@@ -172,35 +281,43 @@ export default function App() {
   }
 
   async function handleRetry(text) {
-    const currentSessionId = sessions.activeSession?.draft ? '' : sessions.activeSession?.id || ''
+    const currentSessionId = activeSession?.draft ? '' : activeSession?.id || ''
     await chat.sendMessage({
       text,
       sessionId: currentSessionId,
       appendUser: false,
       onCommitted: async (sessionId) => {
-        const result = await sessions.openSession(sessionId)
+        const result = await openSession(sessionId)
         return result.messages
       },
     })
   }
 
-  const backendStatus = connectionState === 'connected'
-    ? `Connected${BASE_URL ? ` · ${BASE_URL}` : ''}`
-    : connectionState === 'auth-required'
-      ? 'Authentication required'
-      : 'Unable to reach backend'
+  if (authStatus !== 'authenticated') {
+    return (
+      <AuthScreen
+        mode={authMode}
+        onModeChange={setAuthMode}
+        onLogin={handleLogin}
+        onSignup={handleSignup}
+        loading={booting || authLoading}
+        error={authError}
+        baseUrl={BASE_URL}
+      />
+    )
+  }
 
   return (
     <div className="flex min-h-screen bg-shell text-white">
       <Sidebar
-        sessions={sessions.sessions}
-        activeSessionId={sessions.activeSession?.draft ? 'draft' : sessions.activeSessionId}
-        draftSessionActive={sessions.draftSessionActive}
+        sessions={sessionList}
+        activeSessionId={activeSession?.draft ? 'draft' : activeSessionId}
+        draftSessionActive={draftSessionActive}
         draftTitle={draftTitle}
         collapsed={sidebarCollapsed}
         mobileOpen={mobileSidebarOpen}
-        loading={booting || sessions.loading}
-        error={sessions.error}
+        loading={booting || sessionsLoading}
+        error={sessionsError}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         onToggleCollapsed={() => setSidebarCollapsed((value) => !value)}
         onOpenMobile={() => setMobileSidebarOpen(true)}
@@ -211,8 +328,9 @@ export default function App() {
 
       <main className="flex min-h-screen min-w-0 flex-1 flex-col">
         <ChatWindow
-          session={sessions.activeSession}
-          sessionTitle={sessions.activeSession?.draft ? draftTitle : sessions.activeSession?.title}
+          session={activeSession}
+          sessionTitle={activeSession?.draft ? draftTitle : activeSession?.title}
+          user={authUser}
           messages={chat.messages}
           input={chat.input}
           onInputChange={chat.setInput}
@@ -222,16 +340,15 @@ export default function App() {
           isSending={chat.isSending || uploading}
           onToggleSidebar={() => setMobileSidebarOpen(true)}
           onRenameSession={(nextTitle) => {
-            if (sessions.activeSession?.draft) {
+            if (activeSession?.draft) {
               setDraftTitle(nextTitle)
-            } else if (sessions.activeSessionId) {
-              sessions.renameSession(sessions.activeSessionId, nextTitle)
+            } else if (activeSessionId) {
+              renameSession(activeSessionId, nextTitle)
               setDraftTitle(nextTitle)
             }
           }}
           onSuggestionPick={handleSuggestionPick}
-          connectionLabel={backendStatus}
-          connectionTone={connectionState === 'auth-required' || connectionState === 'offline' ? 'danger' : 'neutral'}
+          onLogout={handleLogout}
           onRequestFocus={() => setMobileSidebarOpen(false)}
         />
       </main>
